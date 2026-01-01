@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/poridhioss/poridhi-cni/pkg/cni"
+	"github.com/poridhioss/poridhi-cni/pkg/ipam"
 )
 
 func main() {
@@ -42,16 +43,38 @@ func main() {
 
 // cmdAdd handles the ADD command - sets up networking for a container
 func cmdAdd(args *cni.EnvArgs, conf *cni.NetConf) error {
-	// TODO: Implement actual networking in later labs
-	// For now, return a minimal valid result
+	// Initialize IPAM
+	ipamConfig := &ipam.Config{
+		Subnet:  conf.IPAM.Subnet,
+		Gateway: conf.IPAM.Gateway,
+	}
+
+	ipamManager, err := ipam.New(ipamConfig, conf.Name)
+	if err != nil {
+		return fmt.Errorf("failed to initialize IPAM: %w", err)
+	}
+
+	// Allocate IP
+	ip, err := ipamManager.Allocate(args.ContainerID)
+	if err != nil {
+		return fmt.Errorf("failed to allocate IP: %w", err)
+	}
+
+	// Get subnet mask size for CIDR notation
+	ones, _ := ipamManager.Subnet().Mask.Size()
+
+	// Build result
 	result := &cni.Result{
 		CNIVersion: conf.CNIVersion,
-		// In later labs, we'll add:
-		// - Interfaces (created veth pair)
-		// - IPs (allocated from IPAM)
-		// - Routes (default gateway)
-		// - DNS configuration
+		IPs: []cni.IPConfig{
+			{
+				Address:   fmt.Sprintf("%s/%d", ip.String(), ones),
+				Gateway:   ipamManager.Gateway().String(),
+				Interface: 0,
+			},
+		},
 	}
+
 	return printResult(result)
 }
 
