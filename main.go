@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/poridhioss/poridhi-cni/pkg/cni"
-	"github.com/poridhioss/poridhi-cni/pkg/ipam"
 )
 
 func main() {
@@ -43,52 +42,21 @@ func main() {
 
 // cmdAdd handles the ADD command - sets up networking for a container
 func cmdAdd(args *cni.EnvArgs, conf *cni.NetConf) error {
-	// Initialize IPAM
-	ipamConfig := &ipam.Config{
-		Subnet:  conf.IPAM.Subnet,
-		Gateway: conf.IPAM.Gateway,
-	}
-
-	ipamManager, err := ipam.New(ipamConfig, conf.Name)
+	result, err := cni.SetupNetwork(args, conf)
 	if err != nil {
-		return fmt.Errorf("failed to initialize IPAM: %w", err)
+		return err
 	}
-
-	// Allocate IP
-	ip, err := ipamManager.Allocate(args.ContainerID)
-	if err != nil {
-		return fmt.Errorf("failed to allocate IP: %w", err)
-	}
-
-	// Get subnet mask size for CIDR notation
-	ones, _ := ipamManager.Subnet().Mask.Size()
-
-	// Build result
-	result := &cni.Result{
-		CNIVersion: conf.CNIVersion,
-		IPs: []cni.IPConfig{
-			{
-				Address:   fmt.Sprintf("%s/%d", ip.String(), ones),
-				Gateway:   ipamManager.Gateway().String(),
-				Interface: 0,
-			},
-		},
-	}
-
 	return printResult(result)
 }
 
 // cmdDel handles the DEL command - cleans up networking for a container
 func cmdDel(args *cni.EnvArgs, conf *cni.NetConf) error {
-	// TODO: Implement cleanup in later labs
-	// DEL should be idempotent - succeed even if nothing to delete
-	return nil
+	return cni.TeardownNetwork(args, conf)
 }
 
 // cmdCheck handles the CHECK command - verifies networking is correct
 func cmdCheck(args *cni.EnvArgs, conf *cni.NetConf) error {
-	// TODO: Implement health checking in later labs
-	return nil
+	return cni.CheckNetwork(args, conf)
 }
 
 // cmdVersion handles the VERSION command - reports supported CNI versions

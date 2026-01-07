@@ -6,6 +6,7 @@ type NetConf struct {
 	Name       string `json:"name"`
 	Type       string `json:"type"`
 	Bridge     string `json:"bridge,omitempty"`
+	MTU        int    `json:"mtu,omitempty"`
 	IPAM       IPAM   `json:"ipam,omitempty"`
 	DNS        DNS    `json:"dns,omitempty"`
 }
