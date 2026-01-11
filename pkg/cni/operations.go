@@ -8,6 +8,7 @@ import (
 	"github.com/poridhioss/poridhi-cni/pkg/ipam"
 	"github.com/poridhioss/poridhi-cni/pkg/netns"
 	"github.com/poridhioss/poridhi-cni/pkg/veth"
+	"github.com/poridhioss/poridhi-cni/pkg/route"
 	"github.com/vishvananda/netlink"
 )
 
@@ -32,6 +33,11 @@ func SetupNetwork(args *EnvArgs, conf *NetConf) (*Result, error) {
 			}
 		}
 	}()
+
+	// Step 0: Enable IP forwarding (required for routing packets from containers)
+        if err := route.EnableIPForwarding(); err != nil {
+            return nil, fmt.Errorf("failed to enable IP forwarding: %w", err)
+        }
 
 	// Step 1: Initialize IPAM and allocate IP
 	ipamConfig := &ipam.Config{
