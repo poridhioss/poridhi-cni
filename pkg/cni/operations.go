@@ -7,6 +7,7 @@ import (
 	"github.com/poridhioss/poridhi-cni/pkg/bridge"
 	"github.com/poridhioss/poridhi-cni/pkg/ipam"
 	"github.com/poridhioss/poridhi-cni/pkg/netns"
+	"github.com/poridhioss/poridhi-cni/pkg/iptables"
 	"github.com/poridhioss/poridhi-cni/pkg/veth"
 	"github.com/poridhioss/poridhi-cni/pkg/route"
 	"github.com/vishvananda/netlink"
@@ -112,6 +113,21 @@ func SetupNetwork(args *EnvArgs, conf *NetConf) (*Result, error) {
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to configure container networking: %w", err)
+	}
+
+	// Setup NAT for internet access
+	iptMgr, err := iptables.NewManager()
+	if err != nil {
+		return nil, fmt.Errorf("failed to init iptables: %w", err)
+	}
+
+	if err := iptMgr.SetupNAT(conf.IPAM.Subnet, conf.Bridge); err != nil {
+		return nil, fmt.Errorf("failed to setup NAT: %w", err)
+	}
+
+	// Setup FORWARD rules for bridge traffic
+	if err := iptMgr.SetupForward(conf.IPAM.Subnet, conf.Bridge); err != nil {
+		return nil, fmt.Errorf("failed to setup FORWARD rules: %w", err)
 	}
 
 	// Build and return result
