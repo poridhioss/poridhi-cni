@@ -3,6 +3,8 @@ package cni
 import (
 	"fmt"
 	"net"
+	"os"
+	"path/filepath"
 
 	"github.com/poridhioss/poridhi-cni/pkg/bridge"
 	"github.com/poridhioss/poridhi-cni/pkg/ipam"
@@ -10,6 +12,7 @@ import (
 	"github.com/poridhioss/poridhi-cni/pkg/iptables"
 	"github.com/poridhioss/poridhi-cni/pkg/veth"
 	"github.com/poridhioss/poridhi-cni/pkg/route"
+	"github.com/poridhioss/poridhi-cni/pkg/dns"
 	"github.com/vishvananda/netlink"
 )
 
@@ -130,6 +133,19 @@ func SetupNetwork(args *EnvArgs, conf *NetConf) (*Result, error) {
 		return nil, fmt.Errorf("failed to setup FORWARD rules: %w", err)
 	}
 
+	// Configure DNS for the container namespace
+	dnsConfig := &dns.Config{
+		Nameservers: conf.DNS.Nameservers,
+		Search:      conf.DNS.Search,
+	}
+	if len(dnsConfig.Nameservers) == 0 {
+		dnsConfig = dns.DefaultConfig()
+	}
+	nsName := filepath.Base(args.NetNS)
+	if err := dns.ConfigureForNamespace(nsName, dnsConfig); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to configure DNS: %v\n", err)
+	}
+
 	// Build and return result
 	result := &Result{
 		CNIVersion: conf.CNIVersion,
@@ -152,6 +168,10 @@ func SetupNetwork(args *EnvArgs, conf *NetConf) (*Result, error) {
 				Dst: "0.0.0.0/0",
 				GW:  gatewayIP.String(),
 			},
+		},
+		DNS: DNS{
+			Nameservers: dnsConfig.Nameservers,
+			Search:      dnsConfig.Search,
 		},
 	}
 
