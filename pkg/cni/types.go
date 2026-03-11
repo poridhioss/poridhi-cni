@@ -2,13 +2,14 @@ package cni
 
 // NetConf represents the CNI network configuration received from the runtime
 type NetConf struct {
-	CNIVersion string `json:"cniVersion"`
-	Name       string `json:"name"`
-	Type       string `json:"type"`
-	Bridge     string `json:"bridge,omitempty"`
-	MTU        int    `json:"mtu,omitempty"`
-	IPAM       IPAM   `json:"ipam,omitempty"`
-	DNS        DNS    `json:"dns,omitempty"`
+	CNIVersion    string `json:"cniVersion"`
+	Name          string `json:"name"`
+	Type          string `json:"type"`
+	Bridge        string `json:"bridge,omitempty"`
+	MTU           int    `json:"mtu,omitempty"`
+	IPAM          IPAM   `json:"ipam,omitempty"`
+	DNS           DNS    `json:"dns,omitempty"`
+	ClusterConfig string `json:"clusterConfig,omitempty"` // Path to cluster config
 }
 
 // IPAM holds IP Address Management configuration
