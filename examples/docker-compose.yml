@@ -1,0 +1,16 @@
+# Docker Compose with CNI networking
+# Usage:
+#   1. Start containers: sudo docker compose -f ~/docker-compose.yml up -d
+#   2. Attach CNI networking: sudo ~/attach-compose.sh
+
+services:
+  web:
+    image: nginx:alpine
+    network_mode: none
+    container_name: cni-web
+
+  api:
+    image: python:3.9-alpine
+    network_mode: none
+    container_name: cni-api
+    command: python -m http.server 8000
